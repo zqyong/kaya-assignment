@@ -4,11 +4,16 @@ FROM python:3.12-slim
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 # Copy the application into the container.
-COPY . /app
-
+WORKDIR /code
+COPY pyproject.toml uv.lock /code/
 # Install the application dependencies.
-WORKDIR /app
 RUN uv sync --frozen --no-cache
 
+# Place executables in the environment at the front of the path
+ENV PATH="/code/.venv/bin:$PATH"
+
+# Reset the entrypoint, don't invoke `uv`
+ENTRYPOINT []
+
 # Run the application.
-CMD ["/app/.venv/bin/fastapi", "run", "app/main.py", "--port", "8000", "--host", "0.0.0.0"]
+CMD ["fastapi", "run", "app/main.py", "--port", "8000", "--host", "0.0.0.0"]
