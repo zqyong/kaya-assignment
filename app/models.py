@@ -25,6 +25,8 @@ class AdGroup(Base):
     name: Mapped[str] = mapped_column()
     campaign_id: Mapped[str] = mapped_column(ForeignKey("campaign.id"))
 
+    ad_group_stats: Mapped[List["AdGroupStat"]] = relationship()
+
 
 class AdGroupStat(Base):
     __tablename__ = "ad_group_stat"
