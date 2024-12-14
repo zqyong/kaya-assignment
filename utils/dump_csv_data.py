@@ -4,11 +4,18 @@ import sys
 sys.path.append(".")
 
 import pandas as pd
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, declarative_base
 
-from app.database import get_db
 from app.models import Campaign, AdGroup, AdGroupStat
 
-session = next(get_db())
+
+SQLALCHEMY_DATABASE_URL = "postgresql://postgres:password@localhost/postgres"
+engine = create_engine(SQLALCHEMY_DATABASE_URL)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base = declarative_base()
+
+session = SessionLocal()
 
 
 # dumping campaigns
