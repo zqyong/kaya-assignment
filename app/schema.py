@@ -18,7 +18,7 @@ class CampaignStats(BaseModel):
     @classmethod
     def decimal_percision_rounded_to_two(cls, v: Any) -> Any:
         if isinstance(v, Decimal):
-            return round(Decimal(v), 2)
+            return round(v, 2)
         return v
 
 
@@ -50,7 +50,7 @@ class PerformanceTimeSeriesResponse(BaseModel):
     @classmethod
     def decimal_percision_rounded_to_two(cls, v: Any) -> Any:
         if isinstance(v, Decimal):
-            return round(Decimal(v), 2)
+            return round(v, 2)
         return v
 
 
@@ -72,7 +72,7 @@ class PeriodPerformance(BaseModel):
     @classmethod
     def decimal_percision_rounded_to_two(cls, v: Any) -> Any:
         if isinstance(v, Decimal):
-            return round(Decimal(v), 2)
+            return round(v, 2)
         return v
 
 
@@ -92,7 +92,7 @@ class ChangeMetrics(BaseModel):
     @classmethod
     def decimal_percision_rounded_to_two(cls, v: Any) -> Any:
         if isinstance(v, Decimal):
-            return round(Decimal(v), 2)
+            return round(v, 2)
         return v
 
 
