@@ -5,10 +5,10 @@ from typing import List, Literal, Optional
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, func, extract, case
 
-# from app.main import CampaignUpdateRequest
 from app.models import Campaign, AdGroup, AdGroupStat
 from app.schema import (
     CampaignStats,
+    CampaignUpdateRequest,
     CampaignUpdateResponse,
     ChangeMetrics,
     PerformanceComparisonResponse,
@@ -32,16 +32,36 @@ class ComparisonError(CampaignServiceError):
 def calculate_percentage_change(current: Decimal, before: Decimal) -> Optional[Decimal]:
     try:
         if current is not None and before is not None and before != 0:
-            return ((current - before) / before) * 100
+            return round(((current - before) / before) * 100, 2)
     except InvalidOperation:
         pass
     return None
+
+
+def validate_start_and_end_date(
+    start_date: Optional[str], end_date: Optional[str]
+) -> tuple[Optional[datetime], Optional[datetime]]:
+    try:
+        current_start = (
+            datetime.strptime(start_date, "%Y-%m-%d") if start_date else None
+        )
+        current_end = datetime.strptime(end_date, "%Y-%m-%d") if end_date else None
+
+        if (current_start and current_end) and (current_start > current_end):
+            raise ComparisonError("start_date cannot be after end_date.")
+
+        return current_start, current_end
+    except ValueError:
+        raise ComparisonError("Invalid date format. Use YYYY-MM-DD.")
 
 
 class CampaignService:
     def __init__(self, db: Session):
         self.db = db
         pass
+
+    def get_campaign(self, campaign_id: str) -> Campaign:
+        return self.db.query(Campaign).filter(Campaign.id == campaign_id).first()
 
     def get_campaigns(self):
         # Subquery: Calculate the monthly total cost for each AdGroup
@@ -129,7 +149,7 @@ class CampaignService:
 
         return output
 
-    def update_campaign(self, campaign_id: str, update_request: dict):
+    def update_campaign(self, campaign_id: str, update_request: CampaignUpdateRequest):
         # Fetch the campaign
         campaign = self.db.query(Campaign).filter(Campaign.id == campaign_id).first()
 
@@ -150,9 +170,9 @@ class CampaignService:
     def get_time_series_performance(
         self,
         aggregate_by: Literal["day", "week", "month"],
-        campaign_ids: List[int],
-        start_date: str,
-        end_date: str,
+        campaign_ids: Optional[List[int]] = None,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
     ):
         # Determine the grouping level based on the `aggregate_by` parameter
         if aggregate_by == "day":
@@ -173,6 +193,8 @@ class CampaignService:
             ]
         else:
             raise ValueError("Invalid aggregation level")
+
+        start_date, end_date = validate_start_and_end_date(start_date, end_date)
 
         # Base query
         query = (
@@ -259,14 +281,7 @@ class CampaignService:
         end_date: str,
         compare_mode: Literal["preceding", "previous_month"],
     ):
-        try:
-            current_start = datetime.strptime(start_date, "%Y-%m-%d")
-            current_end = datetime.strptime(end_date, "%Y-%m-%d")
-        except ValueError:
-            raise ComparisonError("Invalid date format. Use YYYY-MM-DD.")
-
-        if current_start > current_end:
-            raise ComparisonError("start_date cannot be after end_date.")
+        current_start, current_end = validate_start_and_end_date(start_date, end_date)
 
         # Determine the 'before' period based on compare_mode
         delta = (current_end - current_start).days + 1
@@ -292,39 +307,55 @@ class CampaignService:
                     case(
                         (
                             func.sum(AdGroupStat.clicks) > 0,
-                            func.sum(AdGroupStat.cost) / func.sum(AdGroupStat.clicks),
+                            func.round(
+                                func.sum(AdGroupStat.cost)
+                                / func.sum(AdGroupStat.clicks),
+                                2,
+                            ),
                         ),
                         else_=None,
                     ).label("cost_per_click"),
                     case(
                         (
                             func.sum(AdGroupStat.conversions) > 0,
-                            func.sum(AdGroupStat.cost)
-                            / func.sum(AdGroupStat.conversions),
+                            func.round(
+                                func.sum(AdGroupStat.cost)
+                                / func.sum(AdGroupStat.conversions),
+                                2,
+                            ),
                         ),
                         else_=None,
                     ).label("cost_per_conversion"),
                     case(
                         (
                             func.sum(AdGroupStat.impressions) > 0,
-                            func.sum(AdGroupStat.cost)
-                            / func.sum(AdGroupStat.impressions),
+                            func.round(
+                                func.sum(AdGroupStat.cost)
+                                / func.sum(AdGroupStat.impressions),
+                                2,
+                            ),
                         ),
                         else_=None,
                     ).label("cost_per_impression"),
                     case(
                         (
                             func.sum(AdGroupStat.impressions) > 0,
-                            func.sum(AdGroupStat.clicks)
-                            / func.sum(AdGroupStat.impressions),
+                            func.round(
+                                func.sum(AdGroupStat.clicks)
+                                / func.sum(AdGroupStat.impressions),
+                                2,
+                            ),
                         ),
                         else_=None,
                     ).label("click_through_rate"),
                     case(
                         (
                             func.sum(AdGroupStat.clicks) > 0,
-                            func.sum(AdGroupStat.conversions)
-                            / func.sum(AdGroupStat.clicks),
+                            func.round(
+                                func.sum(AdGroupStat.conversions)
+                                / func.sum(AdGroupStat.clicks),
+                                2,
+                            ),
                         ),
                         else_=None,
                     ).label("conversion_rate"),

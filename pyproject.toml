@@ -1,5 +1,5 @@
 [project]
-name = "kaya-assignment"
+name = "app"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
@@ -15,5 +15,20 @@ dependencies = [
 dev = [
     "pandas>=2.2.3",
     "pre-commit>=4.0.1",
+    "pytest-xdist>=3.6.1",
+    "pytest>=8.3.4",
     "ruff>=0.8.1",
+]
+
+[tool.setuptools.packages.find]
+include = ["app"]
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+#addopts = "-nauto"
+testpaths = [
+    "tests"
+]
+filterwarnings = [
+   "ignore:`json_encoders` is deprecated.:DeprecationWarning:pydantic"
 ]
