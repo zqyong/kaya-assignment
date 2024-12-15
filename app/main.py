@@ -1,4 +1,4 @@
-from typing import List, Literal, Optional
+from typing import List, Optional
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import RedirectResponse
 
@@ -52,7 +52,7 @@ def update_campaign(
 
 @app.get("/performance-time-series")
 def get_performance_time_series(
-    aggregate_by: Literal["day", "week", "month"] = Query(
+    aggregate_by: str = Query(
         ..., description="Aggregate the data by day, week, or month"
     ),
     campaign_ids: Optional[List[int]] = Query(
@@ -98,8 +98,9 @@ def compare_performance(
     end_date: str = Query(
         ..., description="The end date of the current period (YYYY-MM-DD)."
     ),
-    compare_mode: Literal["preceding", "previous_month"] = Query(
-        ..., description="Defines how the comparison period is chosen."
+    compare_mode: str = Query(
+        ...,
+        description="Defines how the comparison period is chosen. Valid values are 'preceding' and 'previous_month'",
     ),
 ) -> PerformanceComparisonResponse:
     """

@@ -192,7 +192,9 @@ class CampaignService:
                 extract("month", AdGroupStat.date).label("month"),
             ]
         else:
-            raise ValueError("Invalid aggregation level")
+            raise ValueError(
+                "Invalid aggregation level. Valid values are 'day', 'week' or 'month'"
+            )
 
         start_date, end_date = validate_start_and_end_date(start_date, end_date)
 
@@ -295,7 +297,9 @@ class CampaignService:
             )  # Approximation for previous month
             before_end = current_end - timedelta(days=30)
         else:
-            raise ValueError(detail="Invalid compare_mode.")
+            raise ValueError(
+                "Invalid compare_mode. Valid values are 'preceding' and 'previous_month'."
+            )
 
         def get_performance_metrics(start, end):
             query = (
